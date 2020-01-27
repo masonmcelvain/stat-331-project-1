@@ -1,8 +1,11 @@
 ---
-title: "Data Analysis Project 1"
+title: "Data Analysis Project 1, Nobel Laureates"
 author: "Mason McElvain"
 date: "1/26/2020"
-output: html_document
+output:
+  prettydoc::html_pretty:
+  theme: cayman
+  highlight: github
 ---
 
 ```{r setup, include=FALSE}
@@ -11,9 +14,56 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r library, include=FALSE}
 library(tidyverse)
 library(readr)
+library(lubridate)
 ```
-Library dependencies: tidyverse, readr
+Library dependencies: tidyverse, readr, lubridate
+```{r import, include=FALSE}
+nobel_winners <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-14/nobel_winners.csv")
+```
 
 # Introduction
-Bla blah blah
+
+```{r}
+nobel_winners %>% 
+  group_by(birth_country) %>% 
+  summarize(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  head(5)
+```
+
+
 # Analysis
+
+```{r age_analysis}
+category_age <- nobel_winners %>% 
+  select(prize_year, category, birth_date, full_name) %>% 
+  mutate(birth_year = year(birth_date),
+         recipient_age = prize_year - birth_year) %>% 
+  na.omit() %>% 
+  select(full_name, category, recipient_age)
+
+category_age %>% 
+  select(category, recipient_age) %>% 
+  group_by(category) %>% 
+  summarize(min = min(recipient_age),
+            med = median(recipient_age),
+            max = max(recipient_age),
+            mean = mean(recipient_age),
+            sd = sd(recipient_age))
+```
+```{r age_plot}
+ggplot(category_age) +
+  geom_boxplot(mapping = aes(x = category, y = recipient_age), color = "blue") +
+  ggtitle("Age of Nobel Laureates from 1900-2016 by Prize Category") +
+  ylab("Laureate Age (years)") +
+  xlab("Prize Category")
+```
+
+Figure 1. Visualization of age of nobel laureates of known age from 1900-2016 by prize category. One insight from this visualization is that Nobel Laureates in Economics and Literature (median age 67) tend to be the oldest of the categories.
+
+First, the age each recipient was when they recieved the Nobel Prize was calculated by subtracting birth year from prize year. All recipients whose birth years (and hence exact ages) are unknown were then filtered out. The remaining recipients were grouped by category and summary statistics were calculated.
+
+It appears that nobel prize winners in the Economics and Literature categories tend to be the oldest (median age 67), and recipients in the Physics category tend to be the youngest (median age 55). One could argue that Economics recipients tend to be even older than Literature recipients, because the mean for Economics is 67.16 with a standard deviation of 7.96 years and the Literature mean is 64.67 with a standard deviation of 10.25 years. Overall, these trends appear to be weak, evidenced by the magnitude of overlap in the boxplot visualization, suggesting that there is not a significant difference in the age of recipients from different categories, but further testing by methods like ANOVA could be used for a more definitive insight. One interesting outlier is the 17 year old recipient in the Peace category in 2014, Malala Yousafzai, a Pakistani activist for female education and against child suppression who happens to be the youngest ever Nobel Laureate.
+
+
+ 
